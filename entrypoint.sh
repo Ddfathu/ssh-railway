@@ -2,6 +2,7 @@
 
 USER_NAME="${SSH_USER:-ddfathu}"
 USER_PASS="${SSH_PASSWORD:-123456}"
+MAIN_PORT="${PORT:-8080}" # Mengikuti port tunggal dari Railway
 
 echo "[*] Mengonfigurasi User SSH..."
 if ! id "$USER_NAME" &>/dev/null; then
@@ -10,21 +11,12 @@ if ! id "$USER_NAME" &>/dev/null; then
 fi
 echo "$USER_NAME:$USER_PASS" | chpasswd
 
-echo "[*] Memulai OpenSSH Server di Port 22 (SSH Direct)..."
+echo "[*] Memulai OpenSSH Server di Port 22..."
 /usr/sbin/sshd
 
-echo "[*] Memulai WS Tunnel di Port 80 (Khusus Payload WS Biasa)..."
-wstunnel server ws://0.0.0.0:80 --restrictTo=127.0.0.1:22 &
-
-echo "[*] Memulai Stunnel (TLS) di Port 443 (Khusus SNI Murni)..."
-cat <<EOF > /etc/stunnel/stunnel.conf
-pid = /var/run/stunnel.pid
-foreground = yes
-debug = 4
-
-[ssh-ssl]
-accept = 0.0.0.0:443
-connect = 127.0.0.1:22
-cert = /etc/stunnel/stunnel.pem
-EOF
-exec stunnel /etc/stunnel/stunnel.conf
+echo "[*] Memulai wstunnel TLS + WebSocket Gateway di Port $MAIN_PORT..."
+# wstunnel membaca sertifikat SSL (untuk SNI) dan langsung membungkus WebSocket ke SSH Port 22
+exec wstunnel server \
+    --listen 0.0.0.0:$MAIN_PORT \
+    --tlsCerts /etc/stunnel/stunnel.pem \
+    --restrictTo 127.0.0.1:22
