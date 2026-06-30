@@ -14,10 +14,17 @@ echo "$USER_NAME:$USER_PASS" | chpasswd
 echo "[*] Memulai OpenSSH Server di Port 22..."
 /usr/sbin/sshd
 
-echo "[*] Memulai wstunnel Gateway di Port $MAIN_PORT..."
-# KOREKSI: Menggunakan argumen sertifikat yang valid dan memperbaiki restrict parameter
-exec wstunnel server \
-    --listen 0.0.0.0:$MAIN_PORT \
-    --tlsSrvCert /etc/stunnel/server.crt \
-    --tlsSrvKey /etc/stunnel/server.key \
-    --restrictTo 127.0.0.1:22
+echo "[*] Membuat konfigurasi Stunnel tunggal di Port $MAIN_PORT..."
+cat <<EOF > /etc/stunnel/stunnel.conf
+pid = /var/run/stunnel.pid
+foreground = yes
+debug = 4
+
+[ssh-ssl]
+accept = 0.0.0.0:$MAIN_PORT
+connect = 127.0.0.1:22
+cert = /etc/stunnel/stunnel.pem
+EOF
+
+echo "[*] Memulai Stunnel..."
+exec stunnel /etc/stunnel/stunnel.conf
