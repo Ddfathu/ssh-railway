@@ -11,10 +11,10 @@ RUN apt-get update && apt-get install -y \
 
 RUN mkdir /var/run/sshd /etc/stunnel
 
-# Generate Sertifikat SSL untuk kebutuhan jabat tangan TLS/SNI di wstunnel
+# KOREKSI: Membuat sertifikat privat (.key) dan publik (.crt) secara terpisah untuk wstunnel
 RUN openssl req -new -newkey rsa:2048 -days 365 -nodes -x509 \
     -subj "/C=ID/ST=Jakarta/L=Jakarta/O=RailwaySSH/CN=localhost" \
-    -keyout /etc/stunnel/stunnel.pem  -out /etc/stunnel/stunnel.pem
+    -keyout /etc/stunnel/server.key -out /etc/stunnel/server.crt
 
 # Download binary wstunnel terbaru
 RUN curl -L -o /usr/local/bin/wstunnel https://github.com/erebe/wstunnel/releases/latest/download/wstunnel_linux_amd64 && \
