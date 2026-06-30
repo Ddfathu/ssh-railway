@@ -2,25 +2,30 @@ FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install dependencies utama
+# Install semua paket yang dibutuhkan
 RUN apt-get update && apt-get install -y \
     openssh-server \
+    stunnel4 \
+    openssl \
+    haproxy \
     sudo \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Konfigurasi runtime daemon SSH
-RUN mkdir /var/run/sshd
+RUN mkdir /var/run/sshd /var/run/stunnel /var/run/haproxy
 
-# Download wstunnel terbaru (Arsitektur AMD64/x86_64 untuk server Railway)
+# Buat Sertifikat SSL untuk Stunnel
+RUN openssl req -new -newkey rsa:2048 -days 365 -nodes -x509 \
+    -subj "/C=ID/ST=Jakarta/L=Jakarta/O=RailwaySSH/CN=localhost" \
+    -keyout /etc/stunnel/stunnel.pem  -out /etc/stunnel/stunnel.pem
+
+# Ambil binary wstunnel terbaru
 RUN curl -L -o /usr/local/bin/wstunnel https://github.com/erebe/wstunnel/releases/latest/download/wstunnel_linux_amd64 && \
     chmod +x /usr/local/bin/wstunnel
 
-# Salin script entrypoint
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-# Port internal (Railway yang atur otomatis, tapi kita ekspos port standar)
 EXPOSE 8080
 
 ENTRYPOINT ["/entrypoint.sh"]
